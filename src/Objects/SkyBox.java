@@ -79,7 +79,7 @@ public class SkyBox {
         
         for (int i = 0; i < skyboxVertices.length; ++i)
         {
-            skyboxVertices[i] = skyboxVertices[i]*6;
+            skyboxVertices[i] = skyboxVertices[i]*8;
         }
         
         gl3.glGenVertexArrays(1, skyboxVAO);

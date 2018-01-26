@@ -17,13 +17,13 @@ void main () {
    frag_normal = (inverse(transpose(model_mat)) * vec4(vertex_normal, 1.0)).xyz;
    frag_normal = normalize(frag_normal);
 
-  // vec3 light_pos_1 = vec3(1.0, 2.0, 3.0);
-//   vec3 light_pos_2 = vec3(-1.0, -2.0, -3.0);
+   vec3 light_pos_1 = vec3(1.0, 2.0, 3.0);
+   vec3 light_pos_2 = vec3(-1.0, -2.0, -3.0);
 
-  // float kd = 0.8 * max(dot(normalize(light_pos_1), abs(frag_normal)), 0);
- //  kd += 0.5 * max(dot(normalize(light_pos_2), abs(frag_normal)), 0);
+   float kd = 0.5 * max(dot(normalize(light_pos_1), abs(frag_normal)), 0);
+   kd += 0.5 * max(dot(normalize(light_pos_2), abs(frag_normal)), 0);
 
-  // vert_color = vec4(kd * color + vec3(0.1, 0.1, 0.1), 0.8);
+   vert_color = vec4(kd * color + vec3(0.1, 0.1, 0.1), 0.8);
 
-   gl_Position = proj_mat * view_mat * model_mat * vec4(vertex_position, 1.0);
+   gl_Position =  proj_mat*view_mat*model_mat*vec4(vertex_position, 1.0);
 }

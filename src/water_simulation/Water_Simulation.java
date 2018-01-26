@@ -32,6 +32,8 @@ import MathUtils.vec3;
 import MathUtils.mat4;
 import com.jogamp.newt.event.KeyEvent;
 import com.jogamp.newt.event.KeyListener;
+import static com.jogamp.opengl.GL.GL_TEXTURE0;
+import static com.jogamp.opengl.GL.GL_TEXTURE_2D;
 import java.awt.event.MouseMotionListener;
 import java.util.concurrent.TimeUnit;
 
@@ -49,6 +51,8 @@ public class Water_Simulation extends JFrame implements GLEventListener
     // For view and projection matrices
     private mat4 view_mat = new mat4();
     private mat4 proj_mat = new mat4();
+    private mat4 inv_view_mat = new mat4();
+    private mat4 inv_proj_mat = new mat4();
     
     // Setup all the objects
 //    private Rectangles rectangle;
@@ -90,8 +94,7 @@ public class Water_Simulation extends JFrame implements GLEventListener
         capabilities = new GLCapabilities(profile);
         canvas = new GLCanvas(capabilities);
         canvas.addGLEventListener(this);
-        canvas.addMouseListener(new MouseEventHandler());
-        canvas.setSize(1000, 1000);
+        canvas.setSize(1000, 600);
 
         // Adding canvas to it
         frame = new JFrame("Water Simulation");
@@ -118,10 +121,20 @@ public class Water_Simulation extends JFrame implements GLEventListener
     {
         // For skybox 
         cam_pos = new vec3(5.0f, 2.0f, 0.0f);
-        cam_targ = new vec3(-1.0f, 0.0f, 0.0f);
+        cam_targ = new vec3(0.0f, 0.0f, 0.0f);
         cam_up = new vec3(0.0f, 1.0f, 0.0f);   
+        
+//        cam_pos = new vec3(15.0f, 12.0f,15.0f);
+//        cam_targ = new vec3(0.0f, 0.0f, -2.0f);
+//        cam_up = new vec3(0.0f, 0.0f, 1.0f);  
+
+        inv_view_mat = view_mat.inverse();
+        inv_proj_mat = proj_mat.inverse();
+        
+
+        
         view_mat = mat4.look_at(cam_pos, cam_targ, cam_up);
-        proj_mat = mat4.perspective_projection(60, canvas_width/canvas_heigth, 0.1f, 1000f);
+        proj_mat = mat4.perspective_projection(60, canvas_width/canvas_heigth, 0.1f, 100f);
         
         // For water surface
         
@@ -134,10 +147,9 @@ public class Water_Simulation extends JFrame implements GLEventListener
         waterSurface = new WaterSurface();
         skyBox = new SkyBox();
         
-        skyTexture = TextureCreator.createTexture("./textures/sky2.jpg");
-        waterTexture = TextureCreator.createTexture("./textures/water.jpg");
+        skyTexture = TextureCreator.createTexture("./textures/skybox/top.jpg");
+        waterTexture = TextureCreator.createTexture("./textures/skybox/top.jpg");
         skyBoxTexture = TextureCreator.createSkyBox();
-      
     }
     
     @Override
@@ -147,18 +159,35 @@ public class Water_Simulation extends JFrame implements GLEventListener
         gl.glClear (GL_COLOR_BUFFER_BIT |  GL_DEPTH_BUFFER_BIT );
         
         // Calculated elasped time
- 
         float currentTime = (float)TimeUnit.NANOSECONDS.toMillis(System.nanoTime())/1000.0f;
-        deltaTime = currentTime - lastFrame;
+        deltaTime = deltaTime + (currentTime - lastFrame);
         lastFrame = currentTime;
         
-        // Update the viewport (Really should not happen every frame, only if the width/height changes)
-        this.canvas_heigth = frame.getHeight();
-        this.canvas_width = frame.getWidth(); 
-        gl.glViewport(0, 0, canvas_width, canvas_heigth);
-        proj_mat = mat4.perspective_projection(60, canvas_width / canvas_heigth, (float)0.1, 100f);
+        if (deltaTime >= 5.0f)
+        {  
+//            System.out.println("delta time = " + deltaTime);
+            deltaTime = 0.0f;
+            int i = (int)((2.85f + 3.0f) / 6.0f * waterSurface.width);
+            int j = (int)((2.85f + 3.0f) / 6.0f * waterSurface.height);
+            
+            if (i > 0 && j > 0 && i < waterSurface.width - 1 && j < waterSurface.height - 1)
+            {
+                float ratio = 1.0f;
+                float min_value = 0.7f;
+                float max_value = 1.2f;
+    
+                waterSurface.u[i][j] = max_value/ratio;
+                waterSurface.u[i-1][j-1] = min_value/ratio;
+                waterSurface.u[i-1][j] = min_value/ratio;
+                waterSurface.u[i-1][j+1] = min_value/ratio;
+                waterSurface.u[i+1][j-1] = min_value/ratio;
+                waterSurface.u[i+1][j] = min_value/ratio;
+                waterSurface.u[i+1][j+1] = min_value/ratio;
+                waterSurface.u[i][j+1] = min_value/ratio;
+                waterSurface.u[i][j-1] = min_value/ratio;
+            }           
+        }
         
-        // **************************************
         waterSurface.update((float)0.016);
         
         /* Draw sky box view*/
@@ -187,13 +216,18 @@ public class Water_Simulation extends JFrame implements GLEventListener
         gl.glUseProgram(surfaceShader.vfProgram);
        
         // Set up uniforms for water surface
-//        mat4 model_view = mat4.identity();
-        gl.glUniformMatrix4fv(surfaceShader.model_mat_location, 1, true, model_view.m,0);
+        mat4 model_mat = mat4.mult(mat4.mult(mat4.scale(new vec3(6.0f, 1.0f, 5.5f)),mat4.identity()), mat4.rotation_x(-(float)Math.PI/2));
+//        mat4 model_mat = mat4.mult(mat4.identity(), mat4.rotation_x(-(float)Math.PI/2));
+//        mat4 model_mat = mat4.identity();
+        
+        gl.glUniformMatrix4fv(surfaceShader.model_mat_location, 1, true, model_mat.m,0);
         gl.glUniformMatrix4fv(surfaceShader.view_mat_location, 1, true, view_mat.m,0);
         gl.glUniformMatrix4fv(surfaceShader.proj_mat_location, 1, true, proj_mat.m,0);
         gl.glUniform3f(surfaceShader.color_location, (float)0.527, (float)0.843, (float)0.898);
         gl.glActiveTexture(GL_TEXTURE0);
         gl.glBindTexture(GL_TEXTURE_2D, waterTexture.get(0));
+        gl.glActiveTexture(GL_TEXTURE1);
+        gl.glBindTexture(GL_TEXTURE_2D, skyTexture.get(0));
 
         // Draw the water surface
         gl.glBindVertexArray(waterSurface.vaoWaterSurf.get(0));
@@ -216,84 +250,5 @@ public class Water_Simulation extends JFrame implements GLEventListener
     public static void main(String[] args)
     {
         new Water_Simulation();
-    }
-    
-    class MouseEventHandler implements MouseListener, MouseMotionListener, KeyListener
-    {
-        
-        public MouseEventHandler() {}
-        
-        @Override
-        public void mouseClicked(MouseEvent event)
-        {
-//            int xpos = event.getX();
-//            int ypos = event.getY();
-//            
-//            vec3 new_mouse_pos = new vec3((2.0f * xpos) / canvas_width - 1.0f, 1.0f - (2.0f * ypos) / canvas_heigth, 1.0f);
-//            vec3 mouse_world = mat4.mult(mat4.mult(inv_view_mat, inv_proj_mat), new_mouse_pos);
-//            mouse_world.make_unit_length();
-//            vec3 mouse_intersection = cam_pos.plus(mouse_world.mult(-cam_pos.z / mouse_world.z));
-//            
-//            if (mouse_intersection.x > -3.0 && mouse_intersection.x < 3.0 &&
-//                    mouse_intersection.y > -3.0 && mouse_intersection.y < 3.0)
-//            {
-//                int i = (int)((mouse_intersection.x + 3.0f) / 6.0f * waterSurface.width);
-//                int j = (int)((mouse_intersection.y + 3.0f) / 6.0f * waterSurface.height);
-//                
-//                if (i > 0 && j > 0 && i < waterSurface.width - 1 && j < waterSurface.height - 1)
-//                {
-//                    waterSurface.u[i][j] = 1.2f;
-//                    waterSurface.u[i-1][j-1] = 0.7f;
-//                    waterSurface.u[i-1][j] = 0.7f;
-//                    waterSurface.u[i-1][j+1] = 0.7f;
-//                    waterSurface.u[i+1][j-1] = 0.7f;
-//                    waterSurface.u[i+1][j] = 0.7f;
-//                    waterSurface.u[i+1][j+1] = 0.7f;
-//                    waterSurface.u[i][j+1] = 0.7f;
-//                    waterSurface.u[i][j-1] = 0.5f;
-//                }
-//            }
-        }
-        
-        @Override
-        public void mousePressed(MouseEvent me) {}
-        
-        @Override
-        public void mouseReleased(MouseEvent me) {}
-        
-        @Override
-        public void mouseEntered(MouseEvent me) {}
-        
-        @Override
-        public void mouseExited(MouseEvent me) {}
-
-        @Override
-        public void mouseDragged(MouseEvent me) {}
-
-        @Override
-        public void mouseMoved(MouseEvent me) 
-        {
-        }
-
-        @Override
-        public void keyPressed(KeyEvent ke) 
-        {
-//            System.out.println(ke.getKeyChar());
-//            if(ke.getKeyChar() == 'W' | ke.getKeyChar() == 'w'){
-//                System.out.println("Dang an");
-//                camera.ProcessKeyboard(Camera.Camera_Movement.FORWARD, deltaTime);
-//            } else if (ke.getKeyChar() =='D' | ke.getKeyChar() == 'd') {
-//                camera.ProcessKeyboard(Camera.Camera_Movement.RIGHT, deltaTime);
-//            } else if (ke.getKeyChar() == 'A' | ke.getKeyChar() == 'a') {
-//                camera.ProcessKeyboard(Camera.Camera_Movement.LEFT, deltaTime);
-//            } else if (ke.getKeyChar() == 'S' | ke.getKeyChar() == 's') {
-//                camera.ProcessKeyboard(Camera.Camera_Movement.BACKWARD, deltaTime);
-//            }
-        }
-
-        @Override
-        public void keyReleased(KeyEvent ke) {
-            System.out.println(ke.getKeyChar());
-        }
-    }
+    }   
 }

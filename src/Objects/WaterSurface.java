@@ -21,9 +21,11 @@ public class WaterSurface {
     private final IntBuffer points_vbo = GLBuffers.newDirectIntBuffer(1);
     private final IntBuffer normals_vbo = GLBuffers.newDirectIntBuffer(1);
     private final GL3 gl3 = (GL3) GLContext.getCurrentGL();
-    public final int N = 61;
-    public final int width = 60;
-    public final int height = 60;
+    private final float min_val = -3.0f;
+    private final float max_val = 3.0f;
+    public final int N = (int)((max_val - min_val)/0.1f) + 1;
+    public final int width = (int)((max_val - min_val)/0.1f);
+    public final int height = (int)((max_val - min_val)/0.1f);
     public final float c = (float)16.0;
     
     public float[][] u = new float[width][height];
@@ -33,7 +35,7 @@ public class WaterSurface {
     
     public IntBuffer vaoWaterSurf = GLBuffers.newDirectIntBuffer(1);
     public IntBuffer elements_vbo = GLBuffers.newDirectIntBuffer(1);;
-    
+   
     public vec3[] points = new vec3[N * N];
     public vec3[] normals = new vec3[N * N];
     public vec3[] elements = new vec3[(N - 1) * (N - 1) * 2];
@@ -55,16 +57,17 @@ public class WaterSurface {
         {
             for (int j = 0; j < this.height; j++)
             {   
-                if (i > 28 && i < 32 && j > 28 && j < 32)
+                if (i > 1 && i < 4 && j > 1 && j < 32)
                 {
-                    this.u[i][j] = (float)0.7;
+                    this.u[i][j] = 0.7f;
                 }
                 else
                 {
-                    this.u[i][j] = (float)0.0;
+                    this.u[i][j] = 0.0f;
                 }
-                this.v[i][j] = (float)0.0;
-                this.u_new[i][j] = (float)0.0; 
+//                this.u[i][j] = 0.0f;
+                this.v[i][j] = 0.0f;
+                this.u_new[i][j] = 0.0f; 
             }
         }
     }
@@ -128,13 +131,13 @@ public class WaterSurface {
         {
             for (int j = 3; j < this.height; j+=3)
             {
-                vec3[] tmpPoints = new vec3[9];               
-                for (int k = 0; k < 9; k++) {
+                vec3[] tmpPoints = new vec3[x_delta.length];               
+                for (int k = 0; k < x_delta.length; k++) {
                     int x_index = i + x_delta[k];
                     int y_index = j + y_delta[k];
                     
-                    float x_tmp = -3 + 6 * (1 - (x_index / (float) this.width));
-                    float y_tmp = -3 + 6 * (1 - (y_index / (float) this.height));
+                    float x_tmp = -min_val + 2 * max_val * (1 - (x_index / (float) this.width));
+                    float y_tmp = -min_val + 2 * max_val * (1 - (y_index / (float) this.height));
                     float z_tmp = this.control_point_heights[x_index][y_index];
                     tmpPoints[k] = new vec3(x_tmp, y_tmp, z_tmp);
                 }
@@ -161,7 +164,7 @@ public class WaterSurface {
                 vec3 n = new vec3(a, b, 1);  
                 vec3 p = tmpPoints[0];
 
-                for (int k = 1; k < 9; k++)
+                for (int k = 1; k < x_delta.length; k++)
                 {
                     vec3 p0 = tmpPoints[k];
                     
@@ -176,14 +179,14 @@ public class WaterSurface {
         
         // Calculate points
         int point_index = 0;
-        for (float x = -3; x < 3; x += 0.1) {
-            for (float y = -3; y < 3; y += 0.1) {
-                int i = (int)(((x + 3.0) / 6.0) * this.width);
-                int j = (int)(((y + 3.0) / 6.0) * this.height);
+        for (float x = min_val; x < max_val; x += 0.1) {
+            for (float y = min_val; y < max_val; y += 0.1) {
+                int i = (int)(((x + max_val) / (2*max_val)) * this.width);
+                int j = (int)(((y + max_val) / (2*max_val)) * this.height);
                 
                 // Take the average height of the blocks around us, weighted by their distances
-                float sum_of_weights = (float)0.0;
-                float avg_height = (float)0.0;
+                float sum_of_weights = 0.0f;
+                float avg_height = 0.0f;
                 
                 for (int k = i-1; k <= i+1; k++)
                 {
@@ -196,8 +199,8 @@ public class WaterSurface {
                             continue;
                         }
                         
-                        float u_pt = -3 + 6 * (k / (float) this.width);
-                        float v_pt = -3 + 6 * (l / (float) this.height);
+                        float u_pt = min_val + 2 * max_val * (k / (float) this.width);
+                        float v_pt = min_val + 2 * max_val * (l / (float) this.height);
                         
                         // Make sure the weight is larger for smaller distances
                         float weight = (float)(100 - (u_pt - x) * (u_pt - x) + (y - v_pt) * (y - v_pt));
@@ -205,12 +208,13 @@ public class WaterSurface {
                         sum_of_weights += weight;
                     }
                 }
-                avg_height /= sum_of_weights;               
+                avg_height /= sum_of_weights;
                 points[point_index] = new vec3(x, y, avg_height);
-                point_index++;
-                
+                point_index++;       
             }
         }
+        
+//        System.out.println("point index = " + point_index);
         
         // Calculate normals
         for (int i = 0; i < N; i++) {
@@ -257,6 +261,12 @@ public class WaterSurface {
                     vec3 p2 = points[p2_i];
                     vec3 p4 = points[p4_i];
                     vec3 p5 = points[p5_i];
+                    
+                    if (j == N - 1)
+                    {
+                        System.out.println("p1_i = " + p1_i + " i = " + i + " j = " + j);
+                        p1.print();
+                    }
                     
                     vec3 n1 = p2.minus(p1).crossProduct(p4.minus(p1));
                     n1.make_unit_length();

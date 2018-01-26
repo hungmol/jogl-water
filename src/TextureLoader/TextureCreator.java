@@ -111,14 +111,18 @@ public class TextureCreator
         skyboxTexture.add("./textures/skybox/front.jpg");
         skyboxTexture.add("./textures/skybox/back.jpg");
         
+//        skyboxTexture.add("./textures/skybox2/right.jpg");
+//        skyboxTexture.add("./textures/skybox2/left.jpg");
+//        skyboxTexture.add("./textures/skybox2/bottom.jpg");
+//        skyboxTexture.add("./textures/skybox2/top.jpg");
+//        skyboxTexture.add("./textures/skybox2/front.jpg");
+//        skyboxTexture.add("./textures/skybox2/back.jpg");
+        
         for (int i = 0; i < skyboxTexture.size(); ++i)
         {
-//            if (!checkFileExist(skyboxTexture.get(i)))
-//                break;
-//            System.out.println(skyboxTexture.get(i));
             BufferedImage bufferImage = getBufferedImage(skyboxTexture.get(i));
             byte[] imgRGBA = getRGBAPixelData(bufferImage);
-            ByteBuffer rgbaBuffer =	Buffers.newDirectByteBuffer(imgRGBA);
+            ByteBuffer rgbaBuffer = Buffers.newDirectByteBuffer(imgRGBA);
             gl3.glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGBA, bufferImage.getWidth(), bufferImage.getHeight(), 0,
                     GL_RGBA, GL_UNSIGNED_BYTE, rgbaBuffer);
             
@@ -130,19 +134,5 @@ public class TextureCreator
         gl3.glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
         
         return textureLoc;
-    }
-    
-    private static boolean checkFileExist(String fileName)
-    {
-        File testFileExist = new File("./textures/skybox/right.jpg");
-        if (testFileExist.exists())
-        {
-            return true;
-        }
-        else
-        {
-            System.err.println("File: " + fileName + " does not exist");
-            return false;
-        }
     }
 }
