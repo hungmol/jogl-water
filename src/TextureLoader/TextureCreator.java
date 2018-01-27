@@ -87,8 +87,8 @@ public class TextureCreator
         gl3.glBindTexture(GL_TEXTURE_2D, location.get(0));
         gl3.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bufferImage.getWidth(), bufferImage.getHeight(), 0,
                 GL_RGBA, GL_UNSIGNED_BYTE, rgbaBuffer);
-        gl3.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        gl3.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        gl3.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        gl3.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
         gl3.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
         gl3.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
         gl3.glBindTexture(GL_TEXTURE_2D, 0);

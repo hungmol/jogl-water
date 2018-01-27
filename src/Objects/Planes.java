@@ -19,12 +19,12 @@ import java.nio.FloatBuffer;
 public class Planes {
     private final float[] point_buffer =  
     {
-        -1f, 1f, 0f,
-         1f, 1f, 0f,
-        -1f, -1f, 0f,
-        1f, 1f, 0f,
-        1f, -1f, 0f,
-        -1f, -1f, 0f
+        -3f, 3f, 0f,
+         3f, 3f, 0f,
+        -3f, -3f, 0f,
+        3f, 3f, 0f,
+        3f, -3f, 0f,
+        -3f, -3f, 0f
     };
     
     private final float[] normals_buffer = 

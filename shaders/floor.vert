@@ -1,4 +1,4 @@
-#version 330 core
+#version 330
 
 in vec3 vertex_position;
 in vec3 vertex_normal;
@@ -15,9 +15,10 @@ uniform vec3 color;
 
 void main () {
    frag_position = (model_mat * vec4(vertex_position, 1.0)).xyz;
+   //frag_position = vec4(vertex_position, 1.0).xyz;
    frag_normal = normalize((inverse(transpose(model_mat)) * vec4(vertex_normal, 1.0)).xyz);
    frag_diffuse_color = color;
-   frag_texture_coord = (vertex_position.xy + vec2(1.0, 1.0)) / 2.0;
+   frag_texture_coord = (vertex_position.xy + vec2(3.0, 3.0)) / 6.0;
 
-   gl_Position = proj_mat*view_mat*model_mat*vec4(vertex_position, 1.0);
+   gl_Position = proj_mat*view_mat*model_mat * vec4(vertex_position, 1.0);
 }

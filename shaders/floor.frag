@@ -1,4 +1,4 @@
-#version 330 core
+#version 330
 
 in vec3 frag_position;
 in vec3 frag_normal;
